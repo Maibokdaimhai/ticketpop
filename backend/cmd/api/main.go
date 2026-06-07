@@ -10,8 +10,8 @@ import (
 	"github.com/Maibokdaimhai/ticketpop/internal/repository"
 	"github.com/Maibokdaimhai/ticketpop/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -39,7 +39,7 @@ func main() {
 	}
 	log.Println("เชื่อมต่อ database สำเร็จ!")
 
-	userRepo    := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
 
@@ -55,6 +55,7 @@ func main() {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", userHandler.Register)
+		auth.POST("/login", userHandler.Login)
 	}
 
 	r.Run(":8080")

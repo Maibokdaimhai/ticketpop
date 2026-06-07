@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
+	"time"
 
 	"github.com/Maibokdaimhai/ticketpop/internal/repository"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -79,4 +82,38 @@ func (s *UserService) Register(ctx context.Context, params RegisterParams) (*Reg
 		Username:    params.Username,
 		DisplayName: params.DisplayName,
 	}, nil
+}
+
+type LoginParams struct {
+	Email    string
+	Password string
+}
+
+type LoginResult struct {
+	Token string `json:"token"`
+}
+
+func (s *UserService) Login(ctx context.Context, params LoginParams) (*LoginResult, error) {
+	user, err := s.repo.GetUserByEmail(ctx, params.Email)
+	if err != nil {
+		return nil, errors.New("email หรือ password ไม่ถูกต้อง")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
+		return nil, errors.New("email หรือ password ไม่ถูกต้อง")
+	}
+
+	// สร้าง JWT token
+	secret := os.Getenv("JWT_SECRET")
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginResult{Token: tokenString}, nil
 }

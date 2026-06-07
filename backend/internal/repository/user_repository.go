@@ -64,3 +64,32 @@ func (r *UserRepository) ExistsUsername(ctx context.Context, username string) (b
 	).Scan(&exists)
 	return exists, err
 }
+
+type UserWithCredential struct {
+	ID           string
+	Email        string
+	Username     string
+	DisplayName  string
+	PasswordHash string
+}
+
+func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*UserWithCredential, error) {
+	var user UserWithCredential
+	err := r.db.QueryRowContext(ctx, `
+		SELECT u.id, u.email, u.username, u.display_name, uc.password_hash
+		FROM users u
+		JOIN user_credentials uc ON uc.user_id = u.id
+		WHERE u.email = $1
+		AND u.deleted_at IS NULL
+	`, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.DisplayName,
+		&user.PasswordHash,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
