@@ -57,6 +57,12 @@ func main() {
 		auth.POST("/register", userHandler.Register)
 		auth.POST("/login", userHandler.Login)
 	}
+	// Protected routes (ต้อง login)
+	api := r.Group("/api")
+	api.Use(handler.AuthMiddleware())
+	{
+		api.GET("/me", userHandler.Me)
+	}
 
 	r.Run(":8080")
 }

@@ -80,3 +80,10 @@ func (h *UserHandler) Login(c *gin.Context) {
 		"data":    result,
 	})
 }
+
+func (h *UserHandler) Me(c *gin.Context) {
+    userID := c.MustGet("user_id").(string)
+    c.JSON(http.StatusOK, gin.H{
+        "user_id": userID,
+    })
+}
