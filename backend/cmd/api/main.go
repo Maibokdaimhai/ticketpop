@@ -1,50 +1,61 @@
 package main
 
 import (
-    "database/sql"
-    "fmt"
-    "log"
-    "os"
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
 
-    "github.com/gin-gonic/gin"
-    "github.com/joho/godotenv"
-    _ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/Maibokdaimhai/ticketpop/internal/handler"
+	"github.com/Maibokdaimhai/ticketpop/internal/repository"
+	"github.com/Maibokdaimhai/ticketpop/internal/service"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-    // โหลด .env file
-    if err := godotenv.Load(); err != nil {
-        log.Fatal("ไม่พบไฟล์ .env:", err)
-    }
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("ไม่พบไฟล์ .env:", err)
+	}
 
-    // อ่านค่าจาก environment variable
-    dsn := fmt.Sprintf(
-        "postgres://%s:%s@%s:%s/%s",
-        os.Getenv("DB_USER"),
-        os.Getenv("DB_PASSWORD"),
-        os.Getenv("DB_HOST"),
-        os.Getenv("DB_PORT"),
-        os.Getenv("DB_NAME"),
-    )
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
 
-    db, err := sql.Open("pgx", dsn)
-    if err != nil {
-        log.Fatal("ไม่สามารถเชื่อมต่อ database ได้:", err)
-    }
-    defer db.Close()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		log.Fatal("ไม่สามารถเชื่อมต่อ database ได้:", err)
+	}
+	defer db.Close()
 
-    if err := db.Ping(); err != nil {
-        log.Fatal("database ไม่ตอบสนอง:", err)
-    }
-    log.Println("เชื่อมต่อ database สำเร็จ!")
+	if err := db.Ping(); err != nil {
+		log.Fatal("database ไม่ตอบสนอง:", err)
+	}
+	log.Println("เชื่อมต่อ database สำเร็จ!")
 
-    r := gin.Default()
+	userRepo    := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
 
-    r.GET("/health", func(c *gin.Context) {
-        c.JSON(200, gin.H{
-            "status": "ok",
-        })
-    })
+	r := gin.Default()
 
-    r.Run(":8080")
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
+
+	// Auth routes
+	auth := r.Group("/auth")
+	{
+		auth.POST("/register", userHandler.Register)
+	}
+
+	r.Run(":8080")
 }
