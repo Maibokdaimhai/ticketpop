@@ -2,21 +2,37 @@ package main
 
 import (
     "database/sql"
+    "fmt"
     "log"
+    "os"
 
     "github.com/gin-gonic/gin"
+    "github.com/joho/godotenv"
     _ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-    // เชื่อมต่อ PostgreSQL
-    db, err := sql.Open("pgx", "postgres://ticketpop:password@localhost:5432/ticketpop")
+    // โหลด .env file
+    if err := godotenv.Load(); err != nil {
+        log.Fatal("ไม่พบไฟล์ .env:", err)
+    }
+
+    // อ่านค่าจาก environment variable
+    dsn := fmt.Sprintf(
+        "postgres://%s:%s@%s:%s/%s",
+        os.Getenv("DB_USER"),
+        os.Getenv("DB_PASSWORD"),
+        os.Getenv("DB_HOST"),
+        os.Getenv("DB_PORT"),
+        os.Getenv("DB_NAME"),
+    )
+
+    db, err := sql.Open("pgx", dsn)
     if err != nil {
         log.Fatal("ไม่สามารถเชื่อมต่อ database ได้:", err)
     }
     defer db.Close()
 
-    // ทดสอบว่าเชื่อมได้จริงๆ
     if err := db.Ping(); err != nil {
         log.Fatal("database ไม่ตอบสนอง:", err)
     }
