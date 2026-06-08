@@ -39,9 +39,15 @@ func main() {
 	}
 	log.Println("เชื่อมต่อ database สำเร็จ!")
 
+	// user
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
+
+	// event
+	eventRepo := repository.NewEventRepository(db)
+	eventService := service.NewEventService(eventRepo)
+	eventHandler := handler.NewEventHandler(eventService)
 
 	r := gin.Default()
 
@@ -57,11 +63,20 @@ func main() {
 		auth.POST("/register", userHandler.Register)
 		auth.POST("/login", userHandler.Login)
 	}
+
+	// Event routes
+	events := r.Group("/events")
+	{
+		events.GET("", eventHandler.GetEvents)
+		events.GET("/:id", eventHandler.GetEventByID)
+	}
+
 	// Protected routes (ต้อง login)
 	api := r.Group("/api")
 	api.Use(handler.AuthMiddleware())
 	{
 		api.GET("/me", userHandler.Me)
+		api.POST("/events", eventHandler.CreateEvent)
 	}
 
 	r.Run(":8080")
