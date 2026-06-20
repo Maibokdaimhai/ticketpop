@@ -49,6 +49,11 @@ func main() {
 	eventService := service.NewEventService(eventRepo)
 	eventHandler := handler.NewEventHandler(eventService)
 
+	// ticketPool
+	ticketPoolRepo    := repository.NewTicketPoolRepository(db)
+	ticketPoolService := service.NewTicketPoolService(ticketPoolRepo)
+	ticketPoolHandler := handler.NewTicketPoolHandler(ticketPoolService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -69,6 +74,7 @@ func main() {
 	{
 		events.GET("", eventHandler.GetEvents)
 		events.GET("/:id", eventHandler.GetEventByID)
+		events.GET("/:id/ticket-pools", ticketPoolHandler.GetTicketPoolsByEventID)
 	}
 
 	// Protected routes (ต้อง login)
@@ -77,6 +83,7 @@ func main() {
 	{
 		api.GET("/me", userHandler.Me)
 		api.POST("/events", eventHandler.CreateEvent)
+		api.POST("/events/:id/ticket-pools",    ticketPoolHandler.CreateTicketPool)
 	}
 
 	r.Run(":8080")
