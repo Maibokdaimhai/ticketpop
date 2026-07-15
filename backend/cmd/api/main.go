@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -39,6 +41,17 @@ func main() {
 	}
 	log.Println("เชื่อมต่อ database สำเร็จ!")
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr: fmt.Sprintf("%s:%s",
+			os.Getenv("REDIS_HOST"),
+			os.Getenv("REDIS_PORT"),
+		),
+	})
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		log.Fatal("Redis ไม่ตอบสนอง:", err)
+	}
+	log.Println("เชื่อมต่อ Redis สำเร็จ!")
+
 	// user
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
@@ -50,9 +63,14 @@ func main() {
 	eventHandler := handler.NewEventHandler(eventService)
 
 	// ticketPool
-	ticketPoolRepo    := repository.NewTicketPoolRepository(db)
+	ticketPoolRepo := repository.NewTicketPoolRepository(db)
 	ticketPoolService := service.NewTicketPoolService(ticketPoolRepo)
 	ticketPoolHandler := handler.NewTicketPoolHandler(ticketPoolService)
+
+	// booking
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingService := service.NewBookingService(bookingRepo, rdb)
+	bookingHandler := handler.NewBookingHandler(bookingService)
 
 	r := gin.Default()
 
@@ -83,7 +101,10 @@ func main() {
 	{
 		api.GET("/me", userHandler.Me)
 		api.POST("/events", eventHandler.CreateEvent)
-		api.POST("/events/:id/ticket-pools",    ticketPoolHandler.CreateTicketPool)
+		api.POST("/events/:id/ticket-pools", ticketPoolHandler.CreateTicketPool)
+		api.POST("/bookings", bookingHandler.CreateBooking)
+		api.GET("/bookings", bookingHandler.GetBookings)
+		api.GET("/bookings/:id", bookingHandler.GetBookingByID)
 	}
 
 	r.Run(":8080")
