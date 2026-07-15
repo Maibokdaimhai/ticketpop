@@ -48,7 +48,35 @@ func AuthMiddleware() gin.HandlerFunc {
 		// ดึง user_id จาก token แล้วเก็บไว้ใน context
 		claims := token.Claims.(jwt.MapClaims)
 		c.Set("user_id", claims["user_id"])
+		c.Set("role", claims["role"])
 
 		c.Next()
 	}
+}
+
+func RoleMiddleware(roles ...string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        role, exists := c.Get("role")
+        if !exists {
+            c.JSON(http.StatusForbidden, gin.H{
+                "error": "ไม่มีสิทธิ์เข้าถึง",
+            })
+            c.Abort()
+            return
+        }
+
+        // เช็คว่า role ของ user อยู่ใน roles ที่อนุญาตไหม
+        userRole := role.(string)
+        for _, r := range roles {
+            if userRole == r {
+                c.Next()
+                return
+            }
+        }
+
+        c.JSON(http.StatusForbidden, gin.H{
+            "error": "ไม่มีสิทธิ์เข้าถึง",
+        })
+        c.Abort()
+    }
 }

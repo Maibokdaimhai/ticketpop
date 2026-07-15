@@ -99,13 +99,12 @@ func main() {
 	api := r.Group("/api")
 	api.Use(handler.AuthMiddleware())
 	{
-		api.GET("/me", userHandler.Me)
-		api.POST("/events", eventHandler.CreateEvent)
-		api.POST("/events/:id/ticket-pools", ticketPoolHandler.CreateTicketPool)
-		api.POST("/bookings", bookingHandler.CreateBooking)
-		api.GET("/bookings", bookingHandler.GetBookings)
-		api.GET("/bookings/:id", bookingHandler.GetBookingByID)
+		api.GET("/me",                          userHandler.Me)
+		api.POST("/events",                     handler.RoleMiddleware("admin", "organizer"), eventHandler.CreateEvent)
+		api.POST("/events/:id/ticket-pools",    handler.RoleMiddleware("admin", "organizer"), ticketPoolHandler.CreateTicketPool)
+		api.POST("/bookings",                   bookingHandler.CreateBooking)
+		api.GET("/bookings",                    bookingHandler.GetBookings)
+		api.GET("/bookings/:id",                bookingHandler.GetBookingByID)
 	}
-
 	r.Run(":8080")
 }

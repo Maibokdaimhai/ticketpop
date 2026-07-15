@@ -71,12 +71,13 @@ type UserWithCredential struct {
 	Username     string
 	DisplayName  string
 	PasswordHash string
+	Role         string
 }
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*UserWithCredential, error) {
 	var user UserWithCredential
 	err := r.db.QueryRowContext(ctx, `
-		SELECT u.id, u.email, u.username, u.display_name, uc.password_hash
+		SELECT u.id, u.email, u.username, u.display_name, u.role, uc.password_hash
 		FROM users u
 		JOIN user_credentials uc ON uc.user_id = u.id
 		WHERE u.email = $1
@@ -86,6 +87,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*Use
 		&user.Email,
 		&user.Username,
 		&user.DisplayName,
+		&user.Role,
 		&user.PasswordHash,
 	)
 	if err != nil {
