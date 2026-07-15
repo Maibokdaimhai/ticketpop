@@ -72,6 +72,11 @@ func main() {
 	bookingService := service.NewBookingService(bookingRepo, rdb)
 	bookingHandler := handler.NewBookingHandler(bookingService)
 
+	// Payment
+	paymentRepo    := repository.NewPaymentRepository(db)
+	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, rdb)
+	paymentHandler := handler.NewPaymentHandler(paymentService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -99,12 +104,14 @@ func main() {
 	api := r.Group("/api")
 	api.Use(handler.AuthMiddleware())
 	{
-		api.GET("/me",                          userHandler.Me)
-		api.POST("/events",                     handler.RoleMiddleware("admin", "organizer"), eventHandler.CreateEvent)
-		api.POST("/events/:id/ticket-pools",    handler.RoleMiddleware("admin", "organizer"), ticketPoolHandler.CreateTicketPool)
-		api.POST("/bookings",                   bookingHandler.CreateBooking)
-		api.GET("/bookings",                    bookingHandler.GetBookings)
-		api.GET("/bookings/:id",                bookingHandler.GetBookingByID)
+		api.GET("/me",                              userHandler.Me)
+		api.POST("/events",                         handler.RoleMiddleware("admin", "organizer"), eventHandler.CreateEvent)
+		api.POST("/events/:id/ticket-pools",        handler.RoleMiddleware("admin", "organizer"), ticketPoolHandler.CreateTicketPool)
+		api.POST("/bookings",                       bookingHandler.CreateBooking)
+		api.GET("/bookings",                        bookingHandler.GetBookings)
+		api.GET("/bookings/:id",                    bookingHandler.GetBookingByID)
+		api.POST("/payments",                       paymentHandler.CreatePayment)
+		api.GET("/payments/:booking_id",            paymentHandler.GetPaymentByBookingID)
 	}
 	r.Run(":8080")
 }
